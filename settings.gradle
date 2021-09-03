@@ -1,0 +1,13 @@
+pluginManagement {
+  repositories {
+    maven {
+      url "https://repository-cdn.liferay.com/nexus/content/groups/public"
+    }
+  }
+}
+
+rootProject.name = 'java-fibers'
+include 'quasar-core'
+include 'quasar-actors'
+include 'gradle-plugin'
+include 'maven-plugin'
