@@ -13,7 +13,7 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
     }
 
     project.plugins.withType(JavaPlugin) {
-      var instrumentedClasses = project.tasks.create('instrumentClasses')
+      var instrumentedClasses = project.tasks.create('fiberInstrumentClasses')
     }
   }
 

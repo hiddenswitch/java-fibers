@@ -9,6 +9,7 @@ co.paralleluniverse.common.monitoring.ForkJoinPoolMXBean.getInfo()Lco/parallelun
 co.paralleluniverse.common.monitoring.ForkJoinPoolMXBean.getLatency()[J
 co.paralleluniverse.common.monitoring.MetricsForkJoinPoolMonitor$10.getValue()Ljava/lang/Object;
 co.paralleluniverse.common.util.ExtendedStackTrace.get()[Lco/paralleluniverse/common/util/ExtendedStackTraceElement;
+co.paralleluniverse.common.util.ExtendedStackTrace.iterator()Ljava/util/Iterator;
 co.paralleluniverse.common.util.ExtendedStackTraceHotSpot$1.next()Ljava/lang/Object;
 co.paralleluniverse.concurrent.forkjoin.ParkableForkJoinTask.exec1()Z
 co.paralleluniverse.concurrent.util.AbstractCompletableExecutorService.submit(Ljava/lang/Runnable;)Ljava/util/concurrent/Future;
@@ -91,12 +92,12 @@ co.paralleluniverse.strands.channels.PortAutoCloseable.close()V
 co.paralleluniverse.strands.channels.PortAutoCloseable.isClosed()Z
 co.paralleluniverse.strands.channels.PubSub.subscribe(Lco/paralleluniverse/strands/channels/SendPort;)Lco/paralleluniverse/strands/channels/SendPort;
 co.paralleluniverse.strands.channels.PubSub.unsubscribe(Lco/paralleluniverse/strands/channels/SendPort;)V
-co.paralleluniverse.strands.channels.ReceivePort.tryReceive()Ljava/lang/Object;
 co.paralleluniverse.strands.channels.ReceivePortTransformer.transform(Ljava/lang/Object;)Ljava/lang/Object;
 co.paralleluniverse.strands.channels.Selectable.register(Lco/paralleluniverse/strands/channels/SelectAction;)Ljava/lang/Object;
 co.paralleluniverse.strands.channels.Selectable.tryNow(Ljava/lang/Object;)Z
 co.paralleluniverse.strands.channels.Selectable.unregister(Ljava/lang/Object;)V
 co.paralleluniverse.strands.channels.SendPort.close(Ljava/lang/Throwable;)V
+co.paralleluniverse.strands.channels.SendPortTransformer.close(Ljava/lang/Throwable;)V
 co.paralleluniverse.strands.channels.SendPortTransformer.transform(Ljava/lang/Object;)Ljava/lang/Object;
 co.paralleluniverse.strands.concurrent.AbstractQueuedSynchronizer.isHeldExclusively()Z
 co.paralleluniverse.strands.concurrent.AbstractQueuedSynchronizer.tryAcquire(I)Z

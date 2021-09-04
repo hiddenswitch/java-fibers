@@ -30,6 +30,10 @@ This is a fork of Parallel Universe's Quasar fibers library for Java, updated to
 
 It fixes important bugs related to package relocation, removes the Kryo-based serialization (since it was buggy), fixes an issue with timeouts, fixes an issue with stack sizes, and adds support for suspendable iterators.
 
+### Development
 
+> How do I edit `gradle-plugin-test`?
+
+In IntelliJ, right click on `gradle-plugin-test` and choose **Link Gradle Project**.
 
 To instrument a module, add `apply from: '../gradle/instrument.gradle'` to its **build.gradle** file. This will also create an `uninstrumentedJars` configuration that can be used when instrumentation is not possible, as with ahead-of-time compiled binaries.

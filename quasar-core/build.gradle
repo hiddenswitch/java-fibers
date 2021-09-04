@@ -1,5 +1,6 @@
 plugins {
   id 'java-library'
+  id 'maven-publish'
   id 'com.github.johnrengelman.shadow' version "7.0.0"
 }
 
@@ -321,6 +322,16 @@ def scanAndInstrument(SourceSet sourceSet, configs) {
   ant.instrumentation(check: 'true') {
     fileset(dir: sourceSet.output.classesDirs.asPath) {
       exclude(name: 'co/paralleluniverse/fibers/instrument/*.class')
+    }
+  }
+}
+
+afterEvaluate {
+  publishing {
+    publications {
+      release(MavenPublication) {
+        from components.toList()[0]
+      }
     }
   }
 }

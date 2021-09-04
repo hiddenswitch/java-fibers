@@ -10,15 +10,14 @@ repositories {
   mavenCentral()
 }
 
-dependencies {
-  implementation project(path: ':quasar-core', configuration: 'shadowedJar')
+dependencies {implementation project(path: ':quasar-core', configuration: 'shadowedJar')
   implementation localGroovy()
 }
 
 gradlePlugin {
   plugins {
-    javaFibersInstrumentationPlugin {
-      id = 'com.hiddenswitch.fibers.gradle-plugin'
+    instrumentFibersPlugin {
+      id = 'com.hiddenswitch.fibers.instrument'
       displayName = 'Java Fibers instrumentation plugin'
       description = 'A plugin to instrument your project\'s classes for fibers.'
       implementationClass = 'com.hiddenswitch.fibers.gradle.FiberInstrumentationPlugin'
