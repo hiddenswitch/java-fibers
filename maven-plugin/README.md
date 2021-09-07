@@ -2,6 +2,9 @@
 
 From https://github.com/vy/quasar-maven-plugin
 
+In progress.
+
+<!--
 ### Usage
 
 Add the following to your POM file:
@@ -25,3 +28,4 @@ Add the following to your POM file:
     </executions>
 </plugin>
 ```
+-->
