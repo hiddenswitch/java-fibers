@@ -2,9 +2,13 @@ plugins {
   id 'groovy'
   id 'java-gradle-plugin'
   id 'maven-publish'
+  id 'signing'
+  id 'com.gradle.plugin-publish' version '0.14.0'
 }
 
-group 'com.hiddenswitch.fibers'
+apply from: "${rootDir}/gradle/signing.gradle"
+
+group 'com.hiddenswitch'
 version '1.0.0'
 
 evaluationDependsOn(':quasar-core')
@@ -13,12 +17,27 @@ repositories {
   mavenCentral()
 }
 
+groovydoc {
+  exclude('**/*')
+}
+
+java {
+  withSourcesJar()
+  withJavadocJar()
+}
+
+configurations.all {
+  resolutionStrategy.dependencySubstitution {
+    substitute module("com.hiddenswitch:quasar-core") using project(":quasar-core") because "we work with the unreleased development version"
+  }
+}
+
 dependencies {
-  implementation project(path: ':quasar-core', configuration: 'shadowedJar')
+  implementation "com.hiddenswitch:quasar-core:10.0.0"
   implementation localGroovy()
 }
 
-pluginDescriptors.dependsOn ':quasar-core:publishAllPublicationToMavenLocal'
+pluginDescriptors.dependsOn ':quasar-core:publishQuasarCorePublicationToMavenLocal'
 
 gradlePlugin {
   plugins {
@@ -29,6 +48,12 @@ gradlePlugin {
       implementationClass = 'com.hiddenswitch.fibers.gradle.FiberInstrumentationPlugin'
     }
   }
+}
+
+pluginBundle {
+  website = 'https://hiddenswitch.com'
+  vcsUrl = 'https://github.com/hiddenswitch/java-fibers/tree/master/gradle-plugin'
+  tags = ['quasar', 'quasar-core', 'fibers', 'coroutines', 'instrumentation', 'loom']
 }
 
 task install {

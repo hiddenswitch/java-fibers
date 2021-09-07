@@ -1,10 +1,13 @@
 plugins {
   id 'java-library'
   id 'maven-publish'
+  id 'signing'
   id 'com.github.johnrengelman.shadow' version "7.0.0"
 }
 
-group 'com.hiddenswitch.fibers'
+apply from: "${rootDir}/gradle/signing.gradle"
+
+group 'com.hiddenswitch'
 version '10.0.0'
 
 def vendor = "Hidden Switch, Inc."
@@ -19,6 +22,8 @@ repositories {
 java {
   sourceCompatibility(JavaVersion.VERSION_11)
   targetCompatibility(JavaVersion.VERSION_11)
+  withSourcesJar()
+  withJavadocJar()
 }
 
 configurations {
@@ -227,9 +232,7 @@ task install {
   dependsOn 'publishAllPublicationToMavenLocal'
 }
 
-configure(javadoc) {
-  classpath += configurations.compileOnly
-
+javadoc {
   options {
     addStringOption('Xdoclint:none', '-quiet')
   }
@@ -249,11 +252,44 @@ def instrument(SourceSet sourceSet, List<Configuration> configs) {
 
 publishing {
   publications {
-    all(MavenPublication) {
+    quasarCore(MavenPublication) {
+      artifactId 'quasar-core'
+      groupId 'com.hiddenswitch'
+
+      artifact sourcesJar
+      artifact javadocJar
       artifact shadowedJarArtifact
-    }
-    uninstrumented(MavenPublication) {
       artifact uninstrumentedJarArtifact
+
+      pom {
+        name = 'quasar-core'
+        description = 'The core library for Fibers on Java, compatible with Java 11-16. Forked from puniverse/quasar'
+        url = 'https://github.com/hiddenswitch/java-fibers'
+        licenses {
+          license {
+            name = "The GNU Lesser General Public License, version 3"
+            url = "http://www.gnu.org/licenses/lgpl-3.0.txt"
+            distribution = 'repo'
+          }
+          license {
+            name = "Eclipse Public License - v 1.0"
+            url = "http://www.eclipse.org/legal/epl-v10.html"
+            distribution = 'repo'
+          }
+        }
+        developers {
+          developer {
+            id = 'doctorpangloss'
+            name = 'Benjamin Berman'
+            email = 'ben@hiddenswitch.com'
+          }
+        }
+        scm {
+          connection = 'scm:git:github.com/hiddenswitch/java-fibers.git'
+          developerConnection = 'scm:git:ssh://github.com/hiddenswitch/java-fibers.git'
+          url = 'https://github.com/hiddenswitch/java-fibers/tree/master'
+        }
+      }
     }
   }
 }

@@ -144,3 +144,5 @@ dist
 
 # TernJS port file
 .tern-port
+
+local.properties
