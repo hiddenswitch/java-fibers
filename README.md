@@ -34,6 +34,6 @@ It fixes important bugs related to package relocation, removes the Kryo-based se
 
 > How do I edit `gradle-plugin-test`?
 
-In IntelliJ, right click on `gradle-plugin-test` and choose **Link Gradle Project**.
+In IntelliJ, right click on `gradle-plugin-test/build.gradle` and choose **Link Gradle Project**.
 
 To instrument a module, add `apply from: '../gradle/instrument.gradle'` to its **build.gradle** file. This will also create an `uninstrumentedJars` configuration that can be used when instrumentation is not possible, as with ahead-of-time compiled binaries.

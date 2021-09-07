@@ -17,10 +17,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import co.paralleluniverse.fibers.instrument.QuasarInstrumentor;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
@@ -28,8 +29,7 @@ import org.objectweb.asm.Type;
  * @author pron
  */
 public final class AnnotationUtil {
-    public static final int ASMAPI = Opcodes.ASM7;
-    
+
     public static boolean hasClassAnnotation(Class<? extends Annotation> annotationType, byte[] classData) {
         return hasClassAnnotation(annotationType, new ClassReader(classData));
     }
@@ -42,7 +42,7 @@ public final class AnnotationUtil {
         // annotationName = annotationName.replace('.', '/');
         final String annDesc = Type.getDescriptor(annClass);
         final AtomicBoolean res = new AtomicBoolean(false);
-        r.accept(new ClassVisitor(ASMAPI) {
+        r.accept(new ClassVisitor(QuasarInstrumentor.ASMAPI) {
             @Override
             public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             }

@@ -6,10 +6,6 @@ import co.paralleluniverse.fibers.Suspendable;
 
 public class ShouldBeInstrumented {
 	public void test() throws SuspendExecution, InterruptedException {
-		try {
-			Fiber.sleep(10);
-		} catch (SuspendExecution e) {
-			throw new AssertionError(e);
-		}
+		Fiber.sleep(10);
 	}
 }

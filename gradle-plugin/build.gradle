@@ -1,10 +1,13 @@
 plugins {
   id 'groovy'
   id 'java-gradle-plugin'
+  id 'maven-publish'
 }
 
 group 'com.hiddenswitch.fibers'
 version '1.0.0'
+
+evaluationDependsOn(':quasar-core')
 
 repositories {
   mavenCentral()
@@ -15,6 +18,8 @@ dependencies {
   implementation localGroovy()
 }
 
+pluginDescriptors.dependsOn ':quasar-core:publishAllPublicationToMavenLocal'
+
 gradlePlugin {
   plugins {
     instrumentFibersPlugin {
@@ -24,4 +29,8 @@ gradlePlugin {
       implementationClass = 'com.hiddenswitch.fibers.gradle.FiberInstrumentationPlugin'
     }
   }
+}
+
+task install {
+  dependsOn 'publishToMavenLocal'
 }

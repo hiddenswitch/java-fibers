@@ -8,6 +8,11 @@ repositories {
   mavenLocal()
 }
 
+fibers {
+  check = true
+  debug = true
+}
+
 dependencies {
   implementation 'com.hiddenswitch.fibers:quasar-core:10.0.0'
   testImplementation platform('org.junit:junit-bom:5.7.2')

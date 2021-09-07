@@ -80,10 +80,10 @@ public class ModuleFilterTask extends Task {
             try (FileInputStream fis = new FileInputStream(file)) {
                 ClassReader cr = new ClassReader(fis);
                 cw = new ClassWriter(cr, 0);
-                cr.accept(new ClassVisitor(Opcodes.ASM7, cw) {
+                cr.accept(new ClassVisitor(QuasarInstrumentor.ASMAPI, cw) {
                     @Override
                     public ModuleVisitor visitModule(String name, int access, String version) {
-                        return new ModuleVisitor(Opcodes.ASM7, super.visitModule(name, access, version)) {
+                        return new ModuleVisitor(QuasarInstrumentor.ASMAPI, super.visitModule(name, access, version)) {
                             @Override
                             public void visitRequire(String module, int access, String version) {
                                 if (!module.contains(mod)) {
