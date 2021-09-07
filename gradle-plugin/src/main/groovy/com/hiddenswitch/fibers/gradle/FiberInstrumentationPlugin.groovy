@@ -1,31 +1,30 @@
 package com.hiddenswitch.fibers.gradle
 
-import org.gradle.api.GradleException
+
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.tasks.compile.AbstractCompile
+import org.gradle.api.tasks.compile.GroovyCompile
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.scala.ScalaCompile
 
 class FiberInstrumentationPlugin implements Plugin<Project> {
   @Override
   void apply(Project project) {
-    if (getGradleMajorVersion(project) < 7) {
-      throw new GradleException("Only supports Gradle 7 and later")
+    project.tasks.withType(AbstractCompile.class) { task ->
+      task.doLast {
+        if (!(task instanceof JavaCompile) && !(task instanceof GroovyCompile) && !(task instanceof ScalaCompile)) {
+          return
+        }
+
+        project.ant.taskdef(name: 'instrumentation', classname: 'co.paralleluniverse.fibers.instrument.InstrumentationTask', classpath: project.sourceSets.main.runtimeClasspath.asPath)
+        project.ant.instrumentation(check: 'true', allowMonitors: 'true', allowBlocking: 'true') {
+          fileset(dir: task.outputs.files.asPath) {
+            exclude(name: 'co/paralleluniverse/fibers/instrument/*.class')
+          }
+        }
+      }
     }
-
-    project.plugins.withType(JavaPlugin) {
-      var instrumentedClasses = project.tasks.create('fiberInstrumentClasses')
-    }
-  }
-
-  static File getJavaMainOutputDir(Project project)
-  {
-    def classesDir = project.sourceSets.main.java.classesDirectory.getAsFile().get()
-    return classesDir
-  }
-
-  static int getGradleMajorVersion(Project project)
-  {
-    String gradleVersion = project.getGradle().getGradleVersion()
-    Integer.valueOf(gradleVersion.substring(0, gradleVersion.indexOf(".")))
   }
 }

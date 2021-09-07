@@ -10,7 +10,8 @@ repositories {
   mavenCentral()
 }
 
-dependencies {implementation project(path: ':quasar-core', configuration: 'shadowedJar')
+dependencies {
+  implementation project(path: ':quasar-core', configuration: 'shadowedJar')
   implementation localGroovy()
 }
 

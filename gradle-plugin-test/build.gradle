@@ -4,14 +4,16 @@ plugins {
 }
 
 repositories {
-  maven { url 'https://jitpack.io' }
+  mavenCentral()
+  mavenLocal()
 }
 
 dependencies {
-  api 'com.github.hiddenswitch.java-fibers:quasar-core:master-SNAPSHOT'
+  implementation 'com.hiddenswitch.fibers:quasar-core:10.0.0'
+  testImplementation platform('org.junit:junit-bom:5.7.2')
+  testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
 test {
-  dependsOn ':java-fibers:quasar-core:shadowJar'
   useJUnitPlatform()
 }
