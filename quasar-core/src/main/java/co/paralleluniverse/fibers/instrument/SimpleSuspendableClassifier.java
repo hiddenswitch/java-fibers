@@ -41,10 +41,10 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
     public static final String SUSPENDABLES_FILE = "suspendables";
     public static final String SUSPENDABLE_SUPERS_FILE = "suspendable-supers";
 
-    private final Set<String> suspendables = new HashSet<>();
-    private final Set<String> suspendableClasses = new HashSet<>();
-    private final Set<String> suspendableSupers = new HashSet<>();
-    private final Set<String> suspendableSuperInterfaces = new HashSet<>();
+    protected final Set<String> suspendables = new HashSet<>();
+    protected final Set<String> suspendableClasses = new HashSet<>();
+    protected final Set<String> suspendableSupers = new HashSet<>();
+    protected final Set<String> suspendableSuperInterfaces = new HashSet<>();
 
     public SimpleSuspendableClassifier(ClassLoader classLoader) {
         readFiles(classLoader, SUSPENDABLES_FILE, suspendables, suspendableClasses);
@@ -96,7 +96,7 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
         }
     }
 
-    private static void parse(URL file, Set<String> set, Set<String> classSet) {
+    protected static void parse(URL file, Set<String> set, Set<String> classSet) {
         try (InputStream is = file.openStream();
              BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             String line;

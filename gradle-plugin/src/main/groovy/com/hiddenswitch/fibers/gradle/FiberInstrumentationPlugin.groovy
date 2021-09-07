@@ -1,6 +1,7 @@
 package com.hiddenswitch.fibers.gradle
 
 import co.paralleluniverse.fibers.instrument.InstrumentationTask
+import co.paralleluniverse.fibers.instrument.SuspendablesScanner
 import org.apache.tools.ant.types.FileSet
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -11,18 +12,48 @@ import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.scala.ScalaCompile
 
+import java.nio.file.Path
+
 class FiberInstrumentationPlugin implements Plugin<Project> {
   @Override
   void apply(Project project) {
     def taskExtension = project.extensions.create('fibers', FiberInstrumentationExtension)
 
     project.tasks.withType(AbstractCompile.class) { Task task ->
-      task.doLast {
-        if (!(task instanceof JavaCompile) && !(task instanceof GroovyCompile) && !(task instanceof ScalaCompile)) {
-          return
-        }
+      if (!(task instanceof JavaCompile) && !(task instanceof GroovyCompile) && !(task instanceof ScalaCompile)) {
+        return
+      }
 
+      task.doLast {
+        var generatesSuspendableFiles = taskExtension.scanSuspendables || taskExtension.scanSuspendableSupers
+        var suspendableSupersFile = "$task.temporaryDir/scanner/META-INF/suspendable-supers".toString()
+        var suspendablesFile = "$task.temporaryDir/scanner/META-INF/suspendables".toString()
         def classesDirectory = task.destinationDirectory.asFile.get()
+
+        if (generatesSuspendableFiles) {
+          var scanTask = new SuspendablesScanner(classesDirectory.toPath())
+          scanTask.project = project.ant.project
+          scanTask.auto = true
+          scanTask.append = false
+
+          if (taskExtension.scanSuspendables) {
+            scanTask.suspendablesFile = suspendablesFile
+          }
+
+          if (taskExtension.scanSuspendableSupers) {
+            scanTask.supersFile = suspendableSupersFile
+          }
+
+          scanTask.execute()
+
+          if (taskExtension.scanSuspendables) {
+            System.properties.put(TemporarySuspendableClassifier.SUSPENDABLES_FILE_PROP, suspendablesFile)
+          }
+
+          if (taskExtension.scanSuspendableSupers) {
+            System.properties.put(TemporarySuspendableClassifier.SUSPENDABLE_SUPERS_FILE_PROP,suspendableSupersFile)
+          }
+        }
 
         var instrumentationTask = new InstrumentationTask() {
           @Override
@@ -71,10 +102,8 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
         instrumentationTask.allowMonitors = taskExtension.allowBlocking
         instrumentationTask.debug = taskExtension.debug
         instrumentationTask.writeClasses = taskExtension.writeClasses
-
-        def set = new FileSet(dir: classesDirectory)
         instrumentationTask.project = project.ant.project
-        instrumentationTask.addFileSet(set)
+        instrumentationTask.addFileSet(new FileSet(dir: classesDirectory))
         instrumentationTask.execute()
       }
     }

@@ -16,8 +16,10 @@ repositories {
   maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
 }
 
-sourceCompatibility = '11'
-targetCompatibility = '11'
+java {
+  sourceCompatibility(JavaVersion.VERSION_11)
+  targetCompatibility(JavaVersion.VERSION_11)
+}
 
 configurations {
   timewarp
@@ -45,11 +47,6 @@ configurations.all {
 }
 
 sourceSets {
-  main {
-    resources {
-      srcDir('src/main/suspendables')
-    }
-  }
   jmh {
     compileClasspath += sourceSets.main.output + sourceSets.test.output
     runtimeClasspath += sourceSets.main.output + sourceSets.test.output
@@ -122,7 +119,6 @@ dependencies {
   }
 }
 
-processResources.dependsOn compileJava
 compileJava {
   options.warnings = false;
 
@@ -151,12 +147,12 @@ compileJava {
   options.compilerArgs << '-Xlint:-unchecked'
   options.compilerArgs << '-Xlint:-varargs'
 
-  outputs.file('src/main/suspendables/META-INF/suspendable-supers')
   doLast {
-    scanAndInstrument(sourceSets.main, [configurations.runtimeClasspath, configurations.compileClasspath])
+    instrument(sourceSets.main, [configurations.runtimeClasspath, configurations.compileClasspath])
   }
 }
 
+// some users may need an uninstrumented artifact for native images
 task uninstrumentedCompileJava(type: JavaCompile) {
   exclude '**/module-info.java'
   source(sourceSets.main.java)
@@ -196,6 +192,7 @@ configurations.runtime.artifacts.with { archives ->
 
 def shadowedJarArtifact = artifacts.add('shadowedJar', shadowJar.archiveFile) {
   builtBy shadowJar
+  // this causes the shadowed artifact to be the default one retrieved by maven
   classifier = ''
 }
 
@@ -208,6 +205,7 @@ shadowJar {
   from sourceSets.main.output
   configurations = [project.configurations.runtimeClasspath]
   exclude 'META-INF/INDEX.LIST'
+  // todo: if you are using quasar actors, you have a reference to ASM
   relocate 'org.objectweb.asm.', 'co.paralleluniverse.asm.'
 
   manifest {
@@ -237,18 +235,8 @@ configure(javadoc) {
   }
 }
 
-def scanAndInstrument(SourceSet sourceSet, List<Configuration> configs) {
+def instrument(SourceSet sourceSet, List<Configuration> configs) {
   def classpath = '' + sourceSet.output.classesDirs.asPath + ':' + sourceSet.output.resourcesDir + ':' + configs*.asPath.join(':') + ':' + sourceSet.resources.srcDirs*.path.join(':')
-
-  ant.taskdef(
-          name: 'scanSuspendables', classname: 'co.paralleluniverse.fibers.instrument.SuspendablesScanner',
-          classpath: classpath)
-  ant.scanSuspendables(
-          auto: true,
-          supersFile: "${sourceSet.resources.srcDirs.find { it.name.contains('suspendable') }}/META-INF/suspendable-supers",
-          append: false) {
-    fileset(dir: sourceSet.output.classesDirs.asPath)
-  }
 
   ant.taskdef(name: 'instrumentation', classname: 'co.paralleluniverse.fibers.instrument.InstrumentationTask',
           classpath: classpath)

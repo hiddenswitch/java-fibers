@@ -9,6 +9,8 @@ abstract class FiberInstrumentationExtension {
   abstract Property<Boolean> getAllowBlocking();
   abstract Property<Boolean> getDebug();
   abstract Property<Boolean> getWriteClasses();
+  abstract Property<Boolean> getScanSuspendables();
+  abstract Property<Boolean> getScanSuspendableSupers();
 
   FiberInstrumentationExtension() {
     check.convention(false)
@@ -17,5 +19,7 @@ abstract class FiberInstrumentationExtension {
     allowBlocking.convention(false)
     debug.convention(false)
     writeClasses.convention(true)
+    scanSuspendables.convention(false)
+    scanSuspendableSupers.convention(false)
   }
 }

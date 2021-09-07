@@ -11,6 +11,8 @@ repositories {
 fibers {
   check = true
   debug = true
+  scanSuspendables = true
+  scanSuspendableSupers = true
 }
 
 dependencies {
