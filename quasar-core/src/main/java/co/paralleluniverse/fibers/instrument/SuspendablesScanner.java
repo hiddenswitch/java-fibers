@@ -14,14 +14,17 @@
 package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.common.reflection.ClassLoaderUtil;
+
 import static co.paralleluniverse.common.reflection.ClassLoaderUtil.isClassFile;
 import static co.paralleluniverse.common.reflection.ClassLoaderUtil.classToResource;
 import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPENDABLE_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.DONT_INSTRUMENT_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
+
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import com.google.common.base.Function;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -51,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+
 import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -70,9 +74,9 @@ public class SuspendablesScanner extends Task {
     private final Map<String, ClassNode> classes = new HashMap<>();
     private final Set<MethodNode> knownSuspendablesOrSupers = new HashSet<>();
     private final boolean ant;
-    private URLClassLoader cl;
     private final ArrayList<FileSet> filesets = new ArrayList<>();
     private final Path projectDir;
+    private URLClassLoader cl;
     private URL[] urls;
     private SimpleSuspendableClassifier ssc;
     private boolean auto = true;
@@ -84,14 +88,78 @@ public class SuspendablesScanner extends Task {
     public SuspendablesScanner() {
         this.ant = getClass().getClassLoader() instanceof AntClassLoader;
         this.projectDir = null;
-	      this.quiet = true;
+        this.quiet = true;
     }
 
     public SuspendablesScanner(Path projectDir) {
-	      this.quiet = true;
+        this.quiet = true;
         this.ant = getClass().getClassLoader() instanceof AntClassLoader;
         this.projectDir = projectDir;
         assert !ant;
+    }
+
+    private static <T> List<T> unique(List<T> list) {
+        return new ArrayList<>(new LinkedHashSet<>(list));
+    }
+
+    private static String output(MethodNode method) {
+        return method.owner.replace('/', '.') + '.' + method.name;
+    }
+
+    private static void outputResults(String outputFile, boolean append, Collection<String> results) throws Exception {
+        try (PrintStream out = getOutputStream(outputFile, append)) {
+            for (String s : results)
+                out.println(s);
+        }
+    }
+
+    private static String getClassName(String fullMethodWithDesc) {
+        return fullMethodWithDesc.substring(0, fullMethodWithDesc.lastIndexOf('.'));
+    }
+
+    private static String getMethodWithDesc(String fullMethodWithDesc) {
+        return fullMethodWithDesc.substring(fullMethodWithDesc.lastIndexOf('.') + 1);
+    }
+
+    private static String getMethodWithoutReturn(String fullMethodWithDesc) {
+        String m = getMethodWithDesc(fullMethodWithDesc);
+        return m.substring(0, m.lastIndexOf(')') + 1);
+    }
+
+    private static boolean isReflectInvocation(String className, String methodName) {
+        return className.equals("java/lang/reflect/Method") && methodName.equals("invoke");
+    }
+
+    private static boolean isInvocationHandlerInvocation(String className, String methodName) {
+        return className.equals("java/lang/reflect/InvocationHandler") && methodName.equals("invoke");
+    }
+
+    private static boolean isMethodHandleInvocation(String className, String methodName) {
+        return className.equals("java/lang/invoke/MethodHandle") && methodName.startsWith("invoke");
+    }
+
+    private static void classpathToUrls(String[] classPath, List<URL> urls) throws RuntimeException {
+        try {
+            for (String cp : classPath)
+                urls.add(new File(cp).toURI().toURL());
+        } catch (MalformedURLException ex) {
+            throw new AssertionError(ex);
+        }
+    }
+
+    private static PrintStream getOutputStream(String outputFile, boolean append) throws Exception {
+        if (outputFile != null) {
+            outputFile = outputFile.trim();
+            if (outputFile.isEmpty())
+                outputFile = null;
+        }
+        if (outputFile != null) {
+            File file = new File(outputFile);
+            if (file.getParent() != null && !file.getParentFile().exists())
+                file.getParentFile().mkdirs();
+            return new PrintStream(new FileOutputStream(file, append));
+        } else
+            return System.out;
     }
 
     public void addFileSet(FileSet fs) {
@@ -107,8 +175,8 @@ public class SuspendablesScanner extends Task {
     }
 
     /**
-     * Whether suspendables should be found based on the method call-graph.
-     * If false, only suspendable-supers of known suspendables will be found.
+     * Whether suspendables should be found based on the method call-graph. If false, only suspendable-supers of known
+     * suspendables will be found.
      */
     public void setAuto(boolean value) {
         this.auto = value;
@@ -123,12 +191,8 @@ public class SuspendablesScanner extends Task {
 
     public void setURLs(List<URL> urls) {
         this.urls = unique(urls).toArray(new URL[0]);
-        this.cl = new URLClassLoader(this.urls);
+        this.cl = new URLClassLoader(this.urls, getClass().getClassLoader());
         this.ssc = new SimpleSuspendableClassifier(cl);
-    }
-
-    private static <T> List<T> unique(List<T> list) {
-        return new ArrayList<>(new LinkedHashSet<>(list));
     }
 
     @Override
@@ -173,9 +237,7 @@ public class SuspendablesScanner extends Task {
 //                final URLClassLoader ucl = (URLClassLoader) getClass().getClassLoader();
 //                us.addAll(Arrays.asList(ucl.getURLs()));
             }
-            if (this.urls != null)
-                us.addAll(Arrays.asList(this.urls));
-            setURLs(us);
+
 
             log("Classpath URLs: " + Arrays.toString(this.urls), Project.MSG_INFO);
 
@@ -186,6 +248,12 @@ public class SuspendablesScanner extends Task {
             } else
                 pus.add(projectDir.toUri().toURL());
             log("Project URLs: " + pus, Project.MSG_INFO);
+
+            if (this.urls != null)
+                us.addAll(Arrays.asList(this.urls));
+
+            us.addAll(pus);
+            setURLs(us);
 
             final long tStart = System.nanoTime();
 
@@ -269,7 +337,7 @@ public class SuspendablesScanner extends Task {
                         if (is == null)
                             throw new IOException("Resource " + resource + " not found (" + url + ")");
                         new ClassReader(is)
-                                .accept(new SuspendableClassifier(false, ASMAPI, null), ClassReader.SKIP_DEBUG | ClassReader.SKIP_CODE);
+                            .accept(new SuspendableClassifier(false, ASMAPI, null), ClassReader.SKIP_DEBUG | ClassReader.SKIP_CODE);
                     } catch (Exception e) {
                         throw new RuntimeException("Exception thrown during processing (aaa) of " + resource + /*"(classloader: " + Arrays.toString(SuspendablesScanner.this.cl.getURLs()) + ")" +*/ " at " + url, e);
                     }
@@ -337,6 +405,257 @@ public class SuspendablesScanner extends Task {
                     throw new RuntimeException("Exception while processing " + className, e);
                 }
             }
+        }
+    }
+
+    private void createGraph(InputStream classStream) throws IOException {
+        final ClassReader cr = new ClassReader(classStream);
+        ClassVisitor cv = null;
+        cv = new SuspendableClassifier(true, ASMAPI, cv);
+        cv = new ClassNodeVisitor(true, ASMAPI, cv);
+        if (auto)
+            cv = new CallGraphVisitor(true, ASMAPI, cv);
+
+        cr.accept(cv, ClassReader.SKIP_DEBUG | (auto ? 0 : ClassReader.SKIP_CODE));
+    }
+
+    private void walkGraph() {
+        final Queue<MethodNode> q = new ArrayDeque<>();
+        q.addAll(knownSuspendablesOrSupers); // start the bfs from the manualSusp (all classpath)
+
+        while (!q.isEmpty()) {
+            final MethodNode m = q.poll();
+            if (m.inProject) {
+                followBridges(q, getClassNode(m), m);
+                followSupers(q, getClassNode(m), m);
+            }
+            followNonOverriddenSubs(q, getClassNode(m), m);
+            followCallers(q, m);
+        }
+    }
+
+    private void followBridges(Queue<MethodNode> q, ClassNode cls, MethodNode method) {
+        log("followBridges " + method + " " + cls, Project.MSG_DEBUG);
+        if (cls == null)
+            return;
+
+        if (method.suspendType == SuspendableType.NON_SUSPENDABLE)
+            return;
+        final List<String> bridges = cls.getMethodWithDifferentReturn(method.name);
+        for (String m1 : bridges) {
+            if (!method.name.equals(m1)) {
+                MethodNode m = getOrCreateMethodNode(cls.name + '.' + m1);
+                if (m.suspendType != SuspendableType.SUSPENDABLE && m.suspendType != SuspendableType.SUSPENDABLE_SUPER) {
+                    m.setSuspendType(SuspendableType.SUSPENDABLE_SUPER);
+                    m.inProject = method.inProject;
+                    q.add(m);
+                }
+            }
+        }
+    }
+
+    private boolean followSupers(Queue<MethodNode> q, ClassNode cls, MethodNode method) {
+        log("followSupers " + method + " " + cls, Project.MSG_DEBUG);
+        if (cls == null)
+            return false;
+
+        if (method.suspendType == SuspendableType.NON_SUSPENDABLE || method.setBySuper)
+            return false;
+
+        boolean foundMethod = false;
+
+        if (cls.hasMethod(method.name) && method.classNode != cls) {
+            final MethodNode m1 = methods.get((cls.name + '.' + method.name).intern());
+
+            if (m1 != null && m1.suspendType == SuspendableType.NON_SUSPENDABLE)
+                return false;
+
+            if (m1 == null || m1.suspendType == null) {
+                log("Found parent of suspendable method: " + method.owner + '.' + method.name + " in " + cls.name
+                    + (cls.inProject ? "" : " NOT IN PROJECT"), cls.inProject ? Project.MSG_VERBOSE : Project.MSG_WARN);
+
+                final MethodNode m = getOrCreateMethodNode(cls.name + '.' + method.name);
+                m.setSuspendType(SuspendableType.SUSPENDABLE_SUPER);
+                q.add(m);
+
+                foundMethod = true;
+            }
+        }
+
+        // recursively look in superclass and interfaces
+        boolean methodInParent = false;
+        for (ClassNode s : cls.supers)
+            methodInParent |= followSupers(q, fill(s), method);
+
+        if (!foundMethod && methodInParent)
+            log("Found parent of suspendable method in a parent of: " + method.owner + '.' + method.name + " in " + cls.name
+                + (cls.inProject ? "" : " NOT IN PROJECT"), cls.inProject ? Project.MSG_VERBOSE : Project.MSG_WARN);
+
+        return foundMethod || methodInParent;
+    }
+
+    private void followNonOverriddenSubs(Queue<MethodNode> q, ClassNode cls, MethodNode method) {
+        log("followNonOverriddenSubs " + method + " " + cls, Project.MSG_DEBUG);
+        if (cls == null)
+            return;
+
+        if (method.suspendType == SuspendableType.NON_SUSPENDABLE)
+            return;
+
+        if (cls.subs != null) {
+            for (ClassNode s : cls.subs) {
+                if (s != null && !s.hasMethod(method.name) && s.inProject) {
+                    MethodNode sm = getOrCreateMethodNode(s.name + '.' + method.name);
+                    sm.inProject = true;
+                    sm.refersToSuper = true;
+                    if (sm.inProject && sm.suspendType == null) {
+                        sm.setSuspendType(method.suspendType);
+                        sm.setBySuper = true;
+                        q.add(sm);
+                        followNonOverriddenSubs(q, s, sm);
+                    }
+                }
+            }
+        }
+    }
+
+    private void followCallers(Queue<MethodNode> q, MethodNode method) {
+        // mark as suspendables methods from the project which are calling of the given bfs node (which is superSuspenable or suspendable)
+        for (MethodNode caller : method.getCallers()) {
+            if (caller.suspendType == null) { // not yet visited
+                q.add(caller);
+                log("Marking " + caller + " suspendable because it calls " + method, Project.MSG_VERBOSE);
+                caller.setSuspendType(SuspendableType.SUSPENDABLE);
+            }
+        }
+    }
+
+    public void putSuspendablesAndSupers(Collection<String> suspendables, Collection<String> suspendableSupers) {
+        for (MethodNode method : methods.values()) {
+            if (!method.known) {
+                if (method.suspendType == SuspendableType.SUSPENDABLE && !method.refersToSuper && suspendables != null)
+                    suspendables.add(output(method));
+                else if (method.suspendType == SuspendableType.SUSPENDABLE_SUPER && !method.refersToSuper && suspendableSupers != null)
+                    suspendableSupers.add(output(method));
+                // we don't output refersToSuper methods because the instrumentor's MethodDatabase.isMethodSuspendable0 does that traversal again.
+            }
+        }
+    }
+
+    private MethodNode getOrCreateMethodNode(String methodName) {
+        methodName = methodName.intern();
+        MethodNode entry = methods.get(methodName);
+        if (entry == null) {
+            entry = new MethodNode(getClassName(methodName), getMethodWithDesc(methodName));
+            methods.put(methodName, entry);
+        }
+        return entry;
+    }
+
+    private ClassNode getOrCreateClassNode(String className) {
+        className = className.intern();
+        ClassNode node = classes.get(className);
+        if (node == null) {
+            node = new ClassNode(className);
+            classes.put(className, node);
+        }
+        return node;
+    }
+
+    private ClassNode getOrLoadClassNode(String className) {
+        return fill(getOrCreateClassNode(className.intern()));
+    }
+
+    private ClassNode fill(ClassNode node) {
+        if (node.supers == null) {
+            try (InputStream is = ClassLoaderUtil.getResourceAsStream(cl, classToResource(node.name))) {
+                final ClassReader cr = new ClassReader(is);
+                cr.accept(new ClassNodeVisitor(false, ASMAPI, null), ClassReader.SKIP_DEBUG | ClassReader.SKIP_CODE);
+                assert node.supers != null;
+            } catch (IOException e) {
+                throw new RuntimeException("during processing of " + node.name, e);
+            }
+        }
+        return node;
+    }
+
+    private ClassNode getClassNode(MethodNode m) {
+        ClassNode c = m.classNode;
+        if (c == null) {
+            c = getOrLoadClassNode(m.owner);
+            m.classNode = c;
+        }
+        return c;
+    }
+
+    private static class MethodNode {
+        final String name; // methodname+desc
+        String owner;
+        ClassNode classNode;
+        //int acc;
+        boolean inProject;
+        boolean known;
+        SuspendableType suspendType;
+        boolean refersToSuper;
+        boolean setBySuper;
+        private MethodNode[] callers;
+        private int numCallers;
+
+        public MethodNode(String owner, String nameAndDesc) {
+            this.owner = owner.intern();
+            this.name = nameAndDesc.intern();
+        }
+
+        public void addCaller(MethodNode caller) {
+            if (callers == null)
+                callers = new MethodNode[4];
+            if (numCallers + 1 >= callers.length)
+                this.callers = Arrays.copyOf(callers, callers.length * 2);
+            callers[numCallers] = caller;
+            numCallers++;
+        }
+
+        @SuppressWarnings("override")
+        public Collection<MethodNode> getCallers() {
+            if (callers == null)
+                return Collections.emptyList();
+            return new AbstractCollection<MethodNode>() {
+                public int size() {
+                    return numCallers;
+                }
+
+                public Iterator<MethodNode> iterator() {
+                    return new Iterator<MethodNode>() {
+                        private int i;
+
+                        public boolean hasNext() {
+                            return i < numCallers;
+                        }
+
+                        public MethodNode next() {
+                            return callers[i++];
+                        }
+
+                        public void remove() {
+                            throw new UnsupportedOperationException("remove");
+                        }
+                    };
+                }
+            };
+        }
+
+        @Override
+        public String toString() {
+            return "MethodNode{" + owner + '.' + name + " inProject: " + inProject + " suspendType: " + suspendType + '}';
+        }
+
+        public void setSuspendType(SuspendableType suspendType) {
+//            if ("co/paralleluniverse/strands/Strand".equals(owner) && "join()V".equals(name)) {
+//                System.err.println("XXXX:" + owner + "." + name + " " + suspendType);
+//                Thread.dumpStack();
+//            }
+            this.suspendType = suspendType;
+            this.setBySuper = false;
         }
     }
 
@@ -440,8 +759,8 @@ public class SuspendablesScanner extends Task {
 
     private class ClassNodeVisitor extends ClassVisitor {
         private final boolean inProject;
-        private String className;
         private final List<String> methods = new ArrayList<>();
+        private String className;
         private ClassNode cn;
 
         public ClassNodeVisitor(boolean inProject, int api, ClassVisitor cv) {
@@ -530,200 +849,9 @@ public class SuspendablesScanner extends Task {
         }
     }
 
-    private void createGraph(InputStream classStream) throws IOException {
-        final ClassReader cr = new ClassReader(classStream);
-        ClassVisitor cv = null;
-        cv = new SuspendableClassifier(true, ASMAPI, cv);
-        cv = new ClassNodeVisitor(true, ASMAPI, cv);
-        if (auto)
-            cv = new CallGraphVisitor(true, ASMAPI, cv);
-
-        cr.accept(cv, ClassReader.SKIP_DEBUG | (auto ? 0 : ClassReader.SKIP_CODE));
-    }
-
-    private void walkGraph() {
-        final Queue<MethodNode> q = new ArrayDeque<>();
-        q.addAll(knownSuspendablesOrSupers); // start the bfs from the manualSusp (all classpath)
-
-        while (!q.isEmpty()) {
-            final MethodNode m = q.poll();
-            if (m.inProject) {
-                followBridges(q, getClassNode(m), m);
-                followSupers(q, getClassNode(m), m);
-            }
-            followNonOverriddenSubs(q, getClassNode(m), m);
-            followCallers(q, m);
-        }
-    }
-
-    private void followBridges(Queue<MethodNode> q, ClassNode cls, MethodNode method) {
-        log("followBridges " + method + " " + cls, Project.MSG_DEBUG);
-        if (cls == null)
-            return;
-
-        if (method.suspendType == SuspendableType.NON_SUSPENDABLE)
-            return;
-        final List<String> bridges = cls.getMethodWithDifferentReturn(method.name);
-        for (String m1 : bridges) {
-            if (!method.name.equals(m1)) {
-                MethodNode m = getOrCreateMethodNode(cls.name + '.' + m1);
-                if (m.suspendType != SuspendableType.SUSPENDABLE && m.suspendType != SuspendableType.SUSPENDABLE_SUPER) {
-                    m.setSuspendType(SuspendableType.SUSPENDABLE_SUPER);
-                    m.inProject = method.inProject;
-                    q.add(m);
-                }
-            }
-        }
-    }
-
-    private boolean followSupers(Queue<MethodNode> q, ClassNode cls, MethodNode method) {
-        log("followSupers " + method + " " + cls, Project.MSG_DEBUG);
-        if (cls == null)
-            return false;
-
-        if (method.suspendType == SuspendableType.NON_SUSPENDABLE || method.setBySuper)
-            return false;
-
-        boolean foundMethod = false;
-
-        if (cls.hasMethod(method.name) && method.classNode != cls) {
-            final MethodNode m1 = methods.get((cls.name + '.' + method.name).intern());
-
-            if (m1 != null && m1.suspendType == SuspendableType.NON_SUSPENDABLE)
-                return false;
-
-            if (m1 == null || m1.suspendType == null) {
-                log("Found parent of suspendable method: " + method.owner + '.' + method.name + " in " + cls.name
-                        + (cls.inProject ? "" : " NOT IN PROJECT"), cls.inProject ? Project.MSG_VERBOSE : Project.MSG_WARN);
-
-                final MethodNode m = getOrCreateMethodNode(cls.name + '.' + method.name);
-                m.setSuspendType(SuspendableType.SUSPENDABLE_SUPER);
-                q.add(m);
-
-                foundMethod = true;
-            }
-        }
-
-        // recursively look in superclass and interfaces
-        boolean methodInParent = false;
-        for (ClassNode s : cls.supers)
-            methodInParent |= followSupers(q, fill(s), method);
-
-        if (!foundMethod && methodInParent)
-            log("Found parent of suspendable method in a parent of: " + method.owner + '.' + method.name + " in " + cls.name
-                    + (cls.inProject ? "" : " NOT IN PROJECT"), cls.inProject ? Project.MSG_VERBOSE : Project.MSG_WARN);
-
-        return foundMethod || methodInParent;
-    }
-
-    private void followNonOverriddenSubs(Queue<MethodNode> q, ClassNode cls, MethodNode method) {
-        log("followNonOverriddenSubs " + method + " " + cls, Project.MSG_DEBUG);
-        if (cls == null)
-            return;
-
-        if (method.suspendType == SuspendableType.NON_SUSPENDABLE)
-            return;
-
-        if (cls.subs != null) {
-            for (ClassNode s : cls.subs) {
-                if (s != null && !s.hasMethod(method.name) && s.inProject) {
-                    MethodNode sm = getOrCreateMethodNode(s.name + '.' + method.name);
-                    sm.inProject = true;
-                    sm.refersToSuper = true;
-                    if (sm.inProject && sm.suspendType == null) {
-                        sm.setSuspendType(method.suspendType);
-                        sm.setBySuper = true;
-                        q.add(sm);
-                        followNonOverriddenSubs(q, s, sm);
-                    }
-                }
-            }
-        }
-    }
-
-    private void followCallers(Queue<MethodNode> q, MethodNode method) {
-        // mark as suspendables methods from the project which are calling of the given bfs node (which is superSuspenable or suspendable)
-        for (MethodNode caller : method.getCallers()) {
-            if (caller.suspendType == null) { // not yet visited
-                q.add(caller);
-                log("Marking " + caller + " suspendable because it calls " + method, Project.MSG_VERBOSE);
-                caller.setSuspendType(SuspendableType.SUSPENDABLE);
-            }
-        }
-    }
-
-    public void putSuspendablesAndSupers(Collection<String> suspendables, Collection<String> suspendableSupers) {
-        for (MethodNode method : methods.values()) {
-            if (!method.known) {
-                if (method.suspendType == SuspendableType.SUSPENDABLE && !method.refersToSuper && suspendables != null)
-                    suspendables.add(output(method));
-                else if (method.suspendType == SuspendableType.SUSPENDABLE_SUPER && !method.refersToSuper && suspendableSupers != null)
-                    suspendableSupers.add(output(method));
-                // we don't output refersToSuper methods because the instrumentor's MethodDatabase.isMethodSuspendable0 does that traversal again.
-            }
-        }
-    }
-
-    private static String output(MethodNode method) {
-        return method.owner.replace('/', '.') + '.' + method.name;
-    }
-
-    private static void outputResults(String outputFile, boolean append, Collection<String> results) throws Exception {
-        try (PrintStream out = getOutputStream(outputFile, append)) {
-            for (String s : results)
-                out.println(s);
-        }
-    }
-
-    private MethodNode getOrCreateMethodNode(String methodName) {
-        methodName = methodName.intern();
-        MethodNode entry = methods.get(methodName);
-        if (entry == null) {
-            entry = new MethodNode(getClassName(methodName), getMethodWithDesc(methodName));
-            methods.put(methodName, entry);
-        }
-        return entry;
-    }
-
-    private ClassNode getOrCreateClassNode(String className) {
-        className = className.intern();
-        ClassNode node = classes.get(className);
-        if (node == null) {
-            node = new ClassNode(className);
-            classes.put(className, node);
-        }
-        return node;
-    }
-
-    private ClassNode getOrLoadClassNode(String className) {
-        return fill(getOrCreateClassNode(className.intern()));
-    }
-
-    private ClassNode fill(ClassNode node) {
-        if (node.supers == null) {
-            try (InputStream is = ClassLoaderUtil.getResourceAsStream(cl, classToResource(node.name))) {
-                final ClassReader cr = new ClassReader(is);
-                cr.accept(new ClassNodeVisitor(false, ASMAPI, null), ClassReader.SKIP_DEBUG | ClassReader.SKIP_CODE);
-                assert node.supers != null;
-            } catch (IOException e) {
-                throw new RuntimeException("during processing of " + node.name, e);
-            }
-        }
-        return node;
-    }
-
-    private ClassNode getClassNode(MethodNode m) {
-        ClassNode c = m.classNode;
-        if (c == null) {
-            c = getOrLoadClassNode(m.owner);
-            m.classNode = c;
-        }
-        return c;
-    }
-
     private class ClassNode {
-        boolean inProject;
         final String name;
+        boolean inProject;
         ClassNode[] supers; // super and interfaces classnames
         private ClassNode[] subs;  // sub classnames
         private int numSubs;
@@ -787,125 +915,5 @@ public class SuspendablesScanner extends Task {
             subs[numSubs] = cn;
             numSubs++;
         }
-    }
-
-    private static class MethodNode {
-        String owner;
-        ClassNode classNode;
-        final String name; // methodname+desc
-        //int acc;
-        boolean inProject;
-        boolean known;
-        SuspendableType suspendType;
-        boolean refersToSuper;
-        boolean setBySuper;
-        private MethodNode[] callers;
-        private int numCallers;
-
-        public MethodNode(String owner, String nameAndDesc) {
-            this.owner = owner.intern();
-            this.name = nameAndDesc.intern();
-        }
-
-        public void addCaller(MethodNode caller) {
-            if (callers == null)
-                callers = new MethodNode[4];
-            if (numCallers + 1 >= callers.length)
-                this.callers = Arrays.copyOf(callers, callers.length * 2);
-            callers[numCallers] = caller;
-            numCallers++;
-        }
-
-        @SuppressWarnings("override")
-        public Collection<MethodNode> getCallers() {
-            if (callers == null)
-                return Collections.emptyList();
-            return new AbstractCollection<MethodNode>() {
-                public int size() {
-                    return numCallers;
-                }
-
-                public Iterator<MethodNode> iterator() {
-                    return new Iterator<MethodNode>() {
-                        private int i;
-
-                        public boolean hasNext() {
-                            return i < numCallers;
-                        }
-
-                        public MethodNode next() {
-                            return callers[i++];
-                        }
-
-                        public void remove() {
-                            throw new UnsupportedOperationException("remove");
-                        }
-                    };
-                }
-            };
-        }
-
-        @Override
-        public String toString() {
-            return "MethodNode{" + owner + '.' + name + " inProject: " + inProject + " suspendType: " + suspendType + '}';
-        }
-
-        public void setSuspendType(SuspendableType suspendType) {
-//            if ("co/paralleluniverse/strands/Strand".equals(owner) && "join()V".equals(name)) {
-//                System.err.println("XXXX:" + owner + "." + name + " " + suspendType);
-//                Thread.dumpStack();
-//            }
-            this.suspendType = suspendType;
-            this.setBySuper = false;
-        }
-    }
-
-    private static String getClassName(String fullMethodWithDesc) {
-        return fullMethodWithDesc.substring(0, fullMethodWithDesc.lastIndexOf('.'));
-    }
-
-    private static String getMethodWithDesc(String fullMethodWithDesc) {
-        return fullMethodWithDesc.substring(fullMethodWithDesc.lastIndexOf('.') + 1);
-    }
-
-    private static String getMethodWithoutReturn(String fullMethodWithDesc) {
-        String m = getMethodWithDesc(fullMethodWithDesc);
-        return m.substring(0, m.lastIndexOf(')') + 1);
-    }
-
-    private static boolean isReflectInvocation(String className, String methodName) {
-        return className.equals("java/lang/reflect/Method") && methodName.equals("invoke");
-    }
-
-    private static boolean isInvocationHandlerInvocation(String className, String methodName) {
-        return className.equals("java/lang/reflect/InvocationHandler") && methodName.equals("invoke");
-    }
-
-    private static boolean isMethodHandleInvocation(String className, String methodName) {
-        return className.equals("java/lang/invoke/MethodHandle") && methodName.startsWith("invoke");
-    }
-
-    private static void classpathToUrls(String[] classPath, List<URL> urls) throws RuntimeException {
-        try {
-            for (String cp : classPath)
-                urls.add(new File(cp).toURI().toURL());
-        } catch (MalformedURLException ex) {
-            throw new AssertionError(ex);
-        }
-    }
-
-    private static PrintStream getOutputStream(String outputFile, boolean append) throws Exception {
-        if (outputFile != null) {
-            outputFile = outputFile.trim();
-            if (outputFile.isEmpty())
-                outputFile = null;
-        }
-        if (outputFile != null) {
-            File file = new File(outputFile);
-            if (file.getParent() != null && !file.getParentFile().exists())
-                file.getParentFile().mkdirs();
-            return new PrintStream(new FileOutputStream(file, append));
-        } else
-            return System.out;
     }
 }

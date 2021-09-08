@@ -105,7 +105,7 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
         instrumentationTask.debug = taskExtension.debug
         instrumentationTask.writeClasses = taskExtension.writeClasses
         instrumentationTask.project = project.ant.project
-        instrumentationTask.addAllClasspath(task.classpath.files)
+        instrumentationTask.addAllClasspath(task.classpath.files.toList())
         var fileSet = new FileSet(dir: classesDirectory)
         fileSet.appendExcludes(new String[]{'co/paralleluniverse/fibers/instrument/*.class'})
         instrumentationTask.addFileSet(fileSet)

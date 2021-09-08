@@ -119,7 +119,7 @@ public class InstrumentationTask extends Task {
         this.writeClasses = writeClasses;
     }
 
-    public void addAllClasspath(Collection<File> classpath) {
+    public void addAllClasspath(List<File> classpath) {
         this.classpath.addAll(classpath);
     }
 

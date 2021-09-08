@@ -9,7 +9,7 @@ plugins {
 apply from: "${rootDir}/gradle/signing.gradle"
 
 group 'com.hiddenswitch'
-version '1.0.1'
+version '1.0.3'
 
 evaluationDependsOn(':quasar-core')
 
@@ -33,7 +33,7 @@ configurations.all {
 }
 
 dependencies {
-  implementation "com.hiddenswitch:quasar-core:10.0.0"
+  implementation "com.hiddenswitch:quasar-core:10.0.2"
   implementation localGroovy()
 }
 
