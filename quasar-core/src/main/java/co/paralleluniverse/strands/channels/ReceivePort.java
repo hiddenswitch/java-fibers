@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * A channel's consumer-side functional interface.
  *
- * @param Message the type of messages that can be received from this channel.
+ * @param <Message> the type of messages that can be received from this channel.
  * @author pron
  */
 @FunctionalInterface

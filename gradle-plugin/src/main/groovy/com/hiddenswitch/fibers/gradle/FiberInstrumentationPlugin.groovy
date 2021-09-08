@@ -3,6 +3,7 @@ package com.hiddenswitch.fibers.gradle
 import co.paralleluniverse.fibers.instrument.InstrumentationTask
 import co.paralleluniverse.fibers.instrument.SuspendablesScanner
 import org.apache.tools.ant.types.FileSet
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -32,6 +33,7 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
 
         if (generatesSuspendableFiles) {
           var scanTask = new SuspendablesScanner(classesDirectory.toPath())
+          scanTask.setURLs(task.classpath.collect { it.toURI().toURL() })
           scanTask.project = project.ant.project
           scanTask.auto = true
           scanTask.append = false
@@ -51,7 +53,7 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
           }
 
           if (taskExtension.scanSuspendableSupers) {
-            System.properties.put(TemporarySuspendableClassifier.SUSPENDABLE_SUPERS_FILE_PROP,suspendableSupersFile)
+            System.properties.put(TemporarySuspendableClassifier.SUSPENDABLE_SUPERS_FILE_PROP, suspendableSupersFile)
           }
         }
 
@@ -103,7 +105,10 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
         instrumentationTask.debug = taskExtension.debug
         instrumentationTask.writeClasses = taskExtension.writeClasses
         instrumentationTask.project = project.ant.project
-        instrumentationTask.addFileSet(new FileSet(dir: classesDirectory))
+        instrumentationTask.addAllClasspath(task.classpath.files)
+        var fileSet = new FileSet(dir: classesDirectory)
+        fileSet.appendExcludes(new String[]{'co/paralleluniverse/fibers/instrument/*.class'})
+        instrumentationTask.addFileSet(fileSet)
         instrumentationTask.execute()
       }
     }

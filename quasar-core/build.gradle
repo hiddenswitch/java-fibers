@@ -162,7 +162,7 @@ task uninstrumentedCompileJava(type: JavaCompile) {
   exclude '**/module-info.java'
   source(sourceSets.main.java)
   classpath = compileJava.classpath
-  destinationDir(layout.buildDirectory.dir('/uninstrumentedClasses/java/main').get().asFile)
+  destinationDir(file("$buildDir/uninstrumentedClasses/java/main"))
 }
 
 task uninstrumentedJar(type: org.gradle.jvm.tasks.Jar) {
@@ -293,3 +293,5 @@ publishing {
     }
   }
 }
+
+signQuasarCorePublication.enabled = false

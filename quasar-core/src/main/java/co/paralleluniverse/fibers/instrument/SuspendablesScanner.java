@@ -121,7 +121,7 @@ public class SuspendablesScanner extends Task {
         this.append = value;
     }
 
-    void setURLs(List<URL> urls) {
+    public void setURLs(List<URL> urls) {
         this.urls = unique(urls).toArray(new URL[0]);
         this.cl = new URLClassLoader(this.urls);
         this.ssc = new SimpleSuspendableClassifier(cl);
@@ -173,7 +173,7 @@ public class SuspendablesScanner extends Task {
 //                final URLClassLoader ucl = (URLClassLoader) getClass().getClassLoader();
 //                us.addAll(Arrays.asList(ucl.getURLs()));
             }
-            if (this.urls != null) // only in tests
+            if (this.urls != null)
                 us.addAll(Arrays.asList(this.urls));
             setURLs(us);
 

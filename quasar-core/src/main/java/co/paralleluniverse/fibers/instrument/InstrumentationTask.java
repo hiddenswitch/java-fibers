@@ -1,23 +1,23 @@
 /*
  * Quasar: lightweight threads and actors for the JVM.
  * Copyright (c) 2013-2015, Parallel Universe Software Co. All rights reserved.
- * 
+ *
  * This program and the accompanying materials are dual-licensed under
  * either the terms of the Eclipse Public License v1.0 as published by
  * the Eclipse Foundation
- *  
+ *
  *   or (per the licensee's choosing)
- *  
+ *
  * under the terms of the GNU Lesser General Public License version 3.0
  * as published by the Free Software Foundation.
  */
- /*
+/*
  * Copyright (c) 2008-2013, Matthias Mann
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright notice,
  *       this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -45,10 +45,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.Project;
@@ -60,26 +63,26 @@ import org.apache.tools.ant.types.FileSet;
  * Instrumentation ANT task</p>
  *
  * <p>
- * It requires one or more FileSet elements pointing to class files that should
- * be instrumented.</p>
+ * It requires one or more FileSet elements pointing to class files that should be instrumented.</p>
  * <p>
- * Classes that are referenced from the instrumented classes are searched in
- * the classpath of the task. If a referenced class is not found a warning is
- * generated and the instrumentation will result in less efficent code.</p>
- *
+ * Classes that are referenced from the instrumented classes are searched in the classpath of the task. If a referenced
+ * class is not found a warning is generated and the instrumentation will result in less efficent code.</p>
+ * <p>
  * The following options can be set:<ul>
  * <li>check - default: false<br>The resulting code is run through a verifier.</li>
- * <li>verbose - default: false<br>The name of each processed class and all suspendable method calles is displayed.</li>
+ * <li>verbose - default: false<br>The name of each processed class and all suspendable method calles is
+ * displayed.</li>
  * <li>debug - default: false<br>Prints internal debugging information.</li>
  * <li>allowmonitors - default: false<br>Allows the use of synchronized statements - this is DANGEROUS !</li>
  * <li>allowblocking - default: false<br>Allows the use known blocking calls like Thread.sleep, Object.wait etc.</li>
  * </ul>
  *
- * @see <a href="http://ant.apache.org/manual/CoreTypes/fileset.html">ANT FileSet</a>
  * @author Matthias Mann
+ * @see <a href="http://ant.apache.org/manual/CoreTypes/fileset.html">ANT FileSet</a>
  */
 public class InstrumentationTask extends Task {
     private final ArrayList<FileSet> filesets = new ArrayList<>();
+    private final ArrayList<File> classpath = new ArrayList<>();
     private boolean check;
     private boolean verbose;
     private boolean allowMonitors;
@@ -116,12 +119,20 @@ public class InstrumentationTask extends Task {
         this.writeClasses = writeClasses;
     }
 
+    public void addAllClasspath(Collection<File> classpath) {
+        this.classpath.addAll(classpath);
+    }
+
     @Override
     public void execute() throws BuildException {
         try {
             final List<URL> urls = new ArrayList<>();
-            for (FileSet fs : filesets)
+            for (FileSet fs : filesets) {
                 urls.add(fs.getDir().toURI().toURL());
+            }
+            for (var file : classpath) {
+                urls.add(file.toURI().toURL());
+            }
             final ClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]), getClass().getClassLoader());
             final QuasarInstrumentor instrumentor = new QuasarInstrumentor(true);
 
