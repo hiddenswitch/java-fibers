@@ -5,30 +5,20 @@ This is a fork of Parallel Universe's Quasar fibers library for Java, updated to
 ### Requirements
 
  - Java 11 or higher
-
-<!-- todo: publish the plugin
-
+ 
 ### Instrumenting in Gradle
 
-Create a `settings.gradle` or append to it to add the Jitpack plugin repository:
-
-**settings.gradle**
-```groovy
-pluginManagement {
-  repositories {
-    gradlePluginPortal()
-    maven { url 'https://jitpack.io' }
-  }
-}
-```
-
-Add the plugin to your `plugins` block in `build.gradle`:
+Add the plugin to your `plugins` block in `build.gradle` and include a dependency on this library:
 
 **build.gradle**
 ```groovy
 plugins {
   id 'java-library'
-  id 'com.hiddenswitch.fibers.instrument'
+  id 'com.hiddenswitch.fibers.instrument' version '1.0.3'
+}
+
+dependencies {
+  api "com.hiddenswitch:quasar-core:10.0.2"
 }
 ```
 
@@ -57,8 +47,6 @@ fibers {
 ```
 
 All `compileJava` tasks for all source sets will be instrumented.
-
--->
 
 ### What's New
 
