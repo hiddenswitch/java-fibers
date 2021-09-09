@@ -9,8 +9,8 @@ class TemporarySuspendableClassifier extends SimpleSuspendableClassifier {
 
   TemporarySuspendableClassifier() {
     super((ClassLoader) null)
-    var suspendableFilePath = System.getProperty(SUSPENDABLES_FILE_PROP)
-    var suspendableSupersFilePath = System.getProperty(SUSPENDABLE_SUPERS_FILE_PROP)
+    def suspendableFilePath = System.getProperty(SUSPENDABLES_FILE_PROP)
+    def suspendableSupersFilePath = System.getProperty(SUSPENDABLE_SUPERS_FILE_PROP)
     if (suspendableFilePath != null) {
       SimpleSuspendableClassifier.parse(new URL("file:" + suspendableFilePath), suspendables, suspendableClasses)
     }

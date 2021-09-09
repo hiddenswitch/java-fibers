@@ -130,7 +130,7 @@ public class InstrumentationTask extends Task {
             for (FileSet fs : filesets) {
                 urls.add(fs.getDir().toURI().toURL());
             }
-            for (var file : classpath) {
+            for (File file : classpath) {
                 urls.add(file.toURI().toURL());
             }
             final ClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]), getClass().getClassLoader());

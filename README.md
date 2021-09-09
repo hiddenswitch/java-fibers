@@ -1,10 +1,10 @@
 # quasar-core fork
 
-This is a fork of Parallel Universe's Quasar fibers library for Java, updated to work only with Java 11+ without modules.
+This is a fork of Parallel Universe's Quasar fibers library for Java, updated to work only with Java 9+ without modules.
 
 ### Requirements
 
- - Java 11 or higher
+ - Java 9 or higher
  
 ### Instrumenting in Gradle
 
@@ -14,11 +14,11 @@ Add the plugin to your `plugins` block in `build.gradle` and include a dependenc
 ```groovy
 plugins {
   id 'java-library'
-  id 'com.hiddenswitch.fibers.instrument' version '1.0.3'
+  id 'com.hiddenswitch.fibers.instrument' version '1.0.4'
 }
 
 dependencies {
-  api "com.hiddenswitch:quasar-core:10.0.2"
+  api "com.hiddenswitch:quasar-core:10.0.3"
 }
 ```
 

@@ -26,13 +26,13 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
       }
 
       task.doLast {
-        var generatesSuspendableFiles = taskExtension.scanSuspendables || taskExtension.scanSuspendableSupers
-        var suspendableSupersFile = "$task.temporaryDir/scanner/META-INF/suspendable-supers".toString()
-        var suspendablesFile = "$task.temporaryDir/scanner/META-INF/suspendables".toString()
+        def generatesSuspendableFiles = taskExtension.scanSuspendables || taskExtension.scanSuspendableSupers
+        def suspendableSupersFile = "$task.temporaryDir/scanner/META-INF/suspendable-supers".toString()
+        def suspendablesFile = "$task.temporaryDir/scanner/META-INF/suspendables".toString()
         def classesDirectory = task.destinationDirectory.asFile.get()
 
         if (generatesSuspendableFiles) {
-          var scanTask = new SuspendablesScanner(classesDirectory.toPath())
+          def scanTask = new SuspendablesScanner(classesDirectory.toPath())
           scanTask.setURLs(task.classpath.collect { it.toURI().toURL() })
           scanTask.project = project.ant.project
           scanTask.auto = true
@@ -57,7 +57,7 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
           }
         }
 
-        var instrumentationTask = new InstrumentationTask() {
+        def instrumentationTask = new InstrumentationTask() {
           @Override
           void log(Throwable t, int msgLevel) {
             LogLevel logLevel = toLogLevel(msgLevel)
@@ -80,7 +80,7 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
           }
 
           private LogLevel toLogLevel(int msgLevel) {
-            var logLevel = LogLevel.DEBUG
+            def logLevel = LogLevel.DEBUG
             switch (msgLevel) {
               case org.apache.tools.ant.Project.MSG_ERR:
                 logLevel = LogLevel.ERROR
@@ -106,7 +106,7 @@ class FiberInstrumentationPlugin implements Plugin<Project> {
         instrumentationTask.writeClasses = taskExtension.writeClasses
         instrumentationTask.project = project.ant.project
         instrumentationTask.addAllClasspath(task.classpath.files.toList())
-        var fileSet = new FileSet(dir: classesDirectory)
+        def fileSet = new FileSet(dir: classesDirectory)
         fileSet.appendExcludes(new String[]{'co/paralleluniverse/fibers/instrument/*.class'})
         instrumentationTask.addFileSet(fileSet)
         instrumentationTask.execute()

@@ -8,7 +8,7 @@ plugins {
 apply from: "${rootDir}/gradle/signing.gradle"
 
 group 'com.hiddenswitch'
-version '10.0.2'
+version '10.0.3'
 
 def vendor = "Hidden Switch, Inc."
 def moduleName = 'co.paralleluniverse.quasar.core'
@@ -20,8 +20,8 @@ repositories {
 }
 
 java {
-  sourceCompatibility(JavaVersion.VERSION_11)
-  targetCompatibility(JavaVersion.VERSION_11)
+  sourceCompatibility(JavaVersion.VERSION_1_9)
+  targetCompatibility(JavaVersion.VERSION_1_9)
   withSourcesJar()
   withJavadocJar()
 }
@@ -171,7 +171,19 @@ task uninstrumentedJar(type: org.gradle.jvm.tasks.Jar) {
   archiveClassifier.set('uninstrumented')
 }
 
-test {
+task testJava9(type: Test) {
+  javaLauncher.set(javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(9)
+  })
+}
+
+task testJava11(type: Test) {
+  javaLauncher.set(javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(11)
+  })
+}
+
+tasks.withType(Test).configureEach {
   dependsOn = [shadowJar, compileClassloadertestJava]
   useJUnit()
 

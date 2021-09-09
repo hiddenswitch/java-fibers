@@ -24,6 +24,8 @@ groovydoc {
 java {
   withSourcesJar()
   withJavadocJar()
+  targetCompatibility(JavaVersion.VERSION_1_9)
+  sourceCompatibility(JavaVersion.VERSION_1_9)
 }
 
 configurations.all {
