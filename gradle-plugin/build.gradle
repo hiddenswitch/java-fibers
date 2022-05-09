@@ -1,15 +1,11 @@
 plugins {
   id 'groovy'
   id 'java-gradle-plugin'
-  id 'maven-publish'
-  id 'signing'
-  id 'com.gradle.plugin-publish' version '0.14.0'
+  id 'com.gradle.plugin-publish' version '1.0.0-rc-1'
 }
 
-apply from: "${rootDir}/gradle/signing.gradle"
-
 group 'com.hiddenswitch'
-version '10.0.4'
+version '10.0.5'
 
 evaluationDependsOn(':quasar-core')
 
@@ -28,18 +24,10 @@ java {
   sourceCompatibility(JavaVersion.VERSION_1_9)
 }
 
-configurations.all {
-  resolutionStrategy.dependencySubstitution {
-    substitute module("com.hiddenswitch:quasar-core") using project(":quasar-core") because "we work with the unreleased development version"
-  }
-}
-
 dependencies {
-  implementation "com.hiddenswitch:quasar-core:10.0.4"
+  api "com.hiddenswitch:quasar-core:10.0.5"
   implementation localGroovy()
 }
-
-pluginDescriptors.dependsOn ':quasar-core:publishQuasarCorePublicationToMavenLocal'
 
 gradlePlugin {
   plugins {
@@ -56,8 +44,4 @@ pluginBundle {
   website = 'https://hiddenswitch.com'
   vcsUrl = 'https://github.com/hiddenswitch/java-fibers/tree/master/gradle-plugin'
   tags = ['quasar', 'quasar-core', 'fibers', 'coroutines', 'instrumentation', 'loom']
-}
-
-task install {
-  dependsOn 'publishToMavenLocal'
 }

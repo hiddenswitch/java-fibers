@@ -8,7 +8,7 @@ repositories {
 }
 
 group = 'com.hiddenswitch.fibers'
-version = '10.0.4'
+version = '10.0.5'
 
 dependencies {
   implementation project(path: ':quasar-core', configuration: 'shadowedJar')
