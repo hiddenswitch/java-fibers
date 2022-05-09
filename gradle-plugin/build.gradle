@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.hiddenswitch'
-version '10.0.5'
+version '10.0.6'
 
 evaluationDependsOn(':quasar-core')
 
@@ -25,7 +25,7 @@ java {
 }
 
 dependencies {
-  api "com.hiddenswitch:quasar-core:10.0.5"
+  api "com.hiddenswitch:quasar-core:10.0.6"
   implementation localGroovy()
 }
 
