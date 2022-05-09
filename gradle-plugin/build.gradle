@@ -9,7 +9,7 @@ plugins {
 apply from: "${rootDir}/gradle/signing.gradle"
 
 group 'com.hiddenswitch'
-version '1.0.4'
+version '10.0.3'
 
 evaluationDependsOn(':quasar-core')
 

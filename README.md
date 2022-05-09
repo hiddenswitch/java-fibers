@@ -14,7 +14,7 @@ Add the plugin to your `plugins` block in `build.gradle` and include a dependenc
 ```groovy
 plugins {
   id 'java-library'
-  id 'com.hiddenswitch.fibers.instrument' version '1.0.4'
+  id 'com.hiddenswitch.fibers.instrument' version '10.0.3'
 }
 
 dependencies {
