@@ -8,7 +8,7 @@ plugins {
 apply from: "${rootDir}/gradle/signing.gradle"
 
 group 'com.hiddenswitch'
-version '10.0.3'
+version '10.0.4'
 
 def vendor = "Hidden Switch, Inc."
 def moduleName = 'co.paralleluniverse.quasar.core'

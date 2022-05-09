@@ -5,4 +5,4 @@ plugins {
 apply from: "${rootDir}/gradle/publish-root.gradle"
 
 group 'com.hiddenswitch'
-version '10.0.3'
+version '10.0.4'

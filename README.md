@@ -14,11 +14,11 @@ Add the plugin to your `plugins` block in `build.gradle` and include a dependenc
 ```groovy
 plugins {
   id 'java-library'
-  id 'com.hiddenswitch.fibers.instrument' version '10.0.3'
+  id 'com.hiddenswitch.fibers.instrument' version '10.0.4'
 }
 
 dependencies {
-  api "com.hiddenswitch:quasar-core:10.0.3"
+  api "com.hiddenswitch:quasar-core:10.0.4"
 }
 ```
 
