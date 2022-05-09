@@ -12,6 +12,13 @@ Add the plugin to your `plugins` block in `build.gradle` and include a dependenc
 
 **build.gradle**
 ```groovy
+buildscript {
+  repositories {
+    // required to help plugin find library
+    mavenCentral()
+  }
+}
+
 plugins {
   id 'java-library'
   id 'com.hiddenswitch.fibers.instrument' version '10.0.6'
